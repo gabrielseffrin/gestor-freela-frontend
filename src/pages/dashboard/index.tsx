@@ -1,6 +1,5 @@
 import React, {useEffect, useState} from "react";
 import {useAuth} from "../../contexts/AuthContext.tsx";
-//import Card from "../../components/Card.tsx";
 import {Clock, DollarSign, Folder} from "lucide-react";
 import {getDashboardData} from "../../services/dashboardService.ts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx";
@@ -102,7 +101,10 @@ function Dashboard() {
         <div className="space-y-6">
             <div className="mb-8">
                 <p className="text-2xl font-semibold">
-                    Seja bem-vindo, {user?.email}!
+                    {user?.email}!
+                </p>
+                <p className="text-muted-foreground">
+                    Seja bem-vindo, ao seu sistema de controle de horas
                 </p>
             </div>
 

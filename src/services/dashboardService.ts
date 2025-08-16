@@ -1,5 +1,3 @@
-// Em src/services/dashboardService.ts
-
 export type Project = {
     id: number;
     name: string;
@@ -12,8 +10,8 @@ export type DashboardData = {
 };
 
 const mockProjects: Project[] = [
-    { id: 1, name: "VN Freela" },
-    { id: 2, name: "Projeto Alpha" },
+    {id: 1, name: "VN Freela"},
+    {id: 2, name: "Projeto Alpha"},
 ];
 
 export const getDashboardData = (): Promise<DashboardData> => {
@@ -32,3 +30,13 @@ export const getDashboardData = (): Promise<DashboardData> => {
         }, 1500);
     });
 };
+
+export const finishTimer = (projectId: number, task: string, description: string, time: number): void => {
+    setTimeout(() => {
+        console.log('dados recebidos!', projectId, task, description, time);
+    }, 1500);
+}
+
+export const getTasks = async (projectId: number): Promise<string[]> => {
+
+}
