@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronDownIcon, Clock, Pause, Play, Plus, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { finishTimer } from "@/services/dashboardService.ts";
+//import { finishTimer } from "@/services/dashboardService.ts";
 import {
     Select,
     SelectContent,
@@ -19,31 +19,57 @@ import {
     PopoverContent,
 } from "@/components/ui/popover.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
+import { DataTable } from "@/components/DataTable.tsx";
+import type { ColumnDef } from "@tanstack/react-table";
 
 type TimerStatus = "idle" | "running" | "paused";
+
+type Task = {
+    project: string;
+    activity: string;
+    description: string;
+    duration: string;
+    date: string;
+};
 
 function TimeRecordPage() {
     const [status, setStatus] = useState<TimerStatus>("idle");
     const [seconds, setSeconds] = useState(0);
     const [startTime, setStartTime] = useState<Date | null>(null);
 
-    const [selectedProject, setSelectedProject] = useState(0);
-    const [tasks, setTasks] = useState("");
+    // Timer states
+    const [selectedProject, setSelectedProject] = useState<string>("");
+    const [selectedActivity, setSelectedActivity] = useState<string>("");
     const [description, setDescription] = useState("");
 
+    // Manual states
+    const [manualProject, setManualProject] = useState<string>("");
+    const [manualActivity, setManualActivity] = useState<string>("");
+    const [manualDescription, setManualDescription] = useState("");
+    const [manualDate, setManualDate] = useState<Date | undefined>();
+    const [startHour, setStartHour] = useState("");
+    const [endHour, setEndHour] = useState("");
     const [open, setOpen] = useState(false);
-    const [date, setDate] = useState<Date | undefined>(undefined);
+
+    // Shared
+    const [tasks, setTasks] = useState<Task[]>([]);
+
+    const columns: ColumnDef<Task>[] = [
+        { accessorKey: "project", header: "Projeto" },
+        { accessorKey: "activity", header: "Atividade" },
+        { accessorKey: "description", header: "Descrição" },
+        { accessorKey: "duration", header: "Duração" },
+        { accessorKey: "date", header: "Data" },
+    ];
 
     const formatTime = (totalSeconds: number) => {
         const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
-        const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(
-            2,
-            "0"
-        );
+        const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
         const secs = String(totalSeconds % 60).padStart(2, "0");
         return `${hours}:${minutes}:${secs}`;
     };
 
+    // ---------------- Timer ----------------
     const handlePlay = () => {
         if (status === "idle") setStartTime(new Date());
         setStatus("running");
@@ -52,35 +78,81 @@ function TimeRecordPage() {
     const handlePause = () => setStatus("paused");
 
     const handleStop = () => {
-        if (startTime) {
-            finishTimer(selectedProject, tasks, description, seconds);
+        if (startTime && selectedProject && selectedActivity) {
+            //finishTimer(selectedProject, tasks, description, seconds);
+            const newTask: Task = {
+                project: selectedProject,
+                activity: selectedActivity,
+                description,
+                duration: formatTime(seconds),
+                date: new Date().toISOString().split("T")[0],
+            };
+            setTasks((prev) => [...prev, newTask]);
         }
         setStatus("idle");
         setSeconds(0);
         setStartTime(null);
+        setSelectedProject("");
+        setSelectedActivity("");
+        setDescription("");
     };
 
     useEffect(() => {
-        let intervalId: NodeJS.Timeout;
+        let intervalId: NodeJS.Timeout | undefined;
         if (status === "running") {
             intervalId = setInterval(() => {
                 setSeconds((prev) => prev + 1);
             }, 1000);
         }
-        return () => clearInterval(intervalId);
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
     }, [status]);
+
+    // ---------------- Registro Manual ----------------
+    const handleManualSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!manualDate || !startHour || !endHour || !manualProject || !manualActivity) return;
+
+        const [h1, m1, s1] = startHour.split(":").map(Number);
+        const [h2, m2, s2] = endHour.split(":").map(Number);
+
+        const start = new Date(manualDate);
+        start.setHours(h1, m1, s1 || 0);
+
+        const end = new Date(manualDate);
+        end.setHours(h2, m2, s2 || 0);
+
+        const diffSeconds = Math.floor((end.getTime() - start.getTime()) / 1000);
+
+        const newTask: Task = {
+            project: manualProject,
+            activity: manualActivity,
+            description: manualDescription,
+            duration: formatTime(diffSeconds),
+            date: manualDate.toISOString().split("T")[0],
+        };
+
+        setTasks((prev) => [...prev, newTask]);
+
+        // limpa form
+        setManualProject("");
+        setManualActivity("");
+        setManualDescription("");
+        setStartHour("");
+        setEndHour("");
+        setManualDate(undefined);
+    };
 
     return (
         <div className="space-y-6">
             <div className="mb-8">
                 <p className="text-2xl font-bold">Registro de Horas</p>
-                <p className="text-muted-foreground">
-                    Registre e gerencie suas horas trabalhadas
-                </p>
+                <p className="text-muted-foreground">Registre e gerencie suas horas trabalhadas</p>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-2">
-                {/* card para registro via timer */}
+                {/* Timer */}
                 <Card className="shadow-lg rounded-2xl">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-xl">
@@ -101,24 +173,17 @@ function TimeRecordPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="text-center">
-                            <div className="text-5xl font-mono font-bold mb-4">
-                                {formatTime(seconds)}
-                            </div>
+                            <div className="text-5xl font-mono font-bold mb-4">{formatTime(seconds)}</div>
                             <div className="flex justify-center gap-2">
                                 {status !== "running" ? (
                                     <Button onClick={handlePlay} className="flex gap-2">
                                         <Play className="h-4 w-4" /> Iniciar
                                     </Button>
                                 ) : (
-                                    <Button
-                                        variant="secondary"
-                                        onClick={handlePause}
-                                        className="flex gap-2"
-                                    >
+                                    <Button variant="secondary" onClick={handlePause} className="flex gap-2">
                                         <Pause className="h-4 w-4" /> Pausar
                                     </Button>
                                 )}
-
                                 <Button
                                     variant="destructive"
                                     className="flex items-center gap-2"
@@ -134,44 +199,43 @@ function TimeRecordPage() {
                         <Separator />
                         <div className="space-y-4 pt-4">
                             <div>
-                                <Label className="mb-2">Projeto</Label>
-                                <Select>
+                                <Label>Projeto</Label>
+                                <Select onValueChange={setSelectedProject} value={selectedProject}>
                                     <SelectTrigger>
-                                        <SelectValue placeholder={"Selecione o Projeto"} />
+                                        <SelectValue placeholder="Selecione o Projeto" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="1">Projeto A</SelectItem>
-                                        <SelectItem value="2">Projeto B</SelectItem>
+                                        <SelectItem value="Projeto A">Projeto A</SelectItem>
+                                        <SelectItem value="Projeto B">Projeto B</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div>
-                                <Label className="mb-2">Atividade</Label>
-                                <Select>
+                                <Label>Atividade</Label>
+                                <Select onValueChange={setSelectedActivity} value={selectedActivity}>
                                     <SelectTrigger>
-                                        <SelectValue placeholder={"Selecione a Atividade"} />
+                                        <SelectValue placeholder="Selecione a Atividade" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="1">Desenvolvimento</SelectItem>
-                                        <SelectItem value="2">Correção de bugs</SelectItem>
+                                        <SelectItem value="Desenvolvimento">Desenvolvimento</SelectItem>
+                                        <SelectItem value="Correção de bugs">Correção de bugs</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
-
                             <div>
-                                <Label htmlFor={"description"}>Descrição</Label>
+                                <Label htmlFor="description">Descrição</Label>
                                 <Input
-                                    id={"description"}
-                                    placeholder={"O que você está fazendo?"}
+                                    id="description"
+                                    placeholder="O que você está fazendo?"
                                     value={description}
-                                    onChange={(event) => setDescription(event.target.value)}
+                                    onChange={(e) => setDescription(e.target.value)}
                                 />
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* card para registro manual */}
+                {/* Registro manual */}
                 <Card className="shadow-lg rounded-2xl">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-xl">
@@ -180,28 +244,24 @@ function TimeRecordPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <form className="space-y-4">
+                        <form className="space-y-4" onSubmit={handleManualSubmit}>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="flex flex-col gap-2">
-                                    <Label htmlFor="date-picker">Data</Label>
+                                    <Label>Data</Label>
                                     <Popover open={open} onOpenChange={setOpen}>
                                         <PopoverTrigger asChild>
-                                            <Button
-                                                variant="outline"
-                                                id="date-picker"
-                                                className="w-32 justify-between font-normal"
-                                            >
-                                                {date ? date.toLocaleDateString() : "Selecionar data"}
+                                            <Button variant="outline" className="w-32 justify-between font-normal">
+                                                {manualDate ? manualDate.toLocaleDateString() : "Selecionar data"}
                                                 <ChevronDownIcon />
                                             </Button>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-auto overflow-hidden p-0" align="start">
                                             <Calendar
                                                 mode="single"
-                                                selected={date}
+                                                selected={manualDate}
                                                 captionLayout="dropdown"
-                                                onSelect={(date) => {
-                                                    setDate(date);
+                                                onSelect={(d) => {
+                                                    setManualDate(d);
                                                     setOpen(false);
                                                 }}
                                             />
@@ -209,12 +269,12 @@ function TimeRecordPage() {
                                     </Popover>
                                 </div>
                                 <div className="flex flex-col gap-2">
-                                    <Label htmlFor="time-picker-start">Hora Início</Label>
-                                    <Input type="time" id="time-picker-start" step="1" />
+                                    <Label>Hora Início</Label>
+                                    <Input type="time" step="1" value={startHour} onChange={(e) => setStartHour(e.target.value)} />
                                 </div>
                                 <div className="flex flex-col gap-2">
-                                    <Label htmlFor="time-picker-end">Hora Fim</Label>
-                                    <Input type="time" id="time-picker-end" step="1" />
+                                    <Label>Hora Fim</Label>
+                                    <Input type="time" step="1" value={endHour} onChange={(e) => setEndHour(e.target.value)} />
                                 </div>
                             </div>
 
@@ -222,48 +282,51 @@ function TimeRecordPage() {
 
                             <div className="space-y-4">
                                 <div>
-                                    <Label className="mb-2">Projeto</Label>
-                                    <Select>
+                                    <Label>Projeto</Label>
+                                    <Select onValueChange={setManualProject} value={manualProject}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder={"Selecione o Projeto"} />
+                                            <SelectValue placeholder="Selecione o Projeto" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="1">Projeto A</SelectItem>
-                                            <SelectItem value="2">Projeto B</SelectItem>
+                                            <SelectItem value="Projeto A">Projeto A</SelectItem>
+                                            <SelectItem value="Projeto B">Projeto B</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div>
-                                    <Label className="mb-2">Atividade</Label>
-                                    <Select>
+                                    <Label>Atividade</Label>
+                                    <Select onValueChange={setManualActivity} value={manualActivity}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder={"Selecione a Atividade"} />
+                                            <SelectValue placeholder="Selecione a Atividade" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="1">Desenvolvimento</SelectItem>
-                                            <SelectItem value="2">Correção de bugs</SelectItem>
+                                            <SelectItem value="Desenvolvimento">Desenvolvimento</SelectItem>
+                                            <SelectItem value="Correção de bugs">Correção de bugs</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
-
                                 <div>
-                                    <Label htmlFor={"description"}>Descrição</Label>
+                                    <Label htmlFor="manual-description">Descrição</Label>
                                     <Input
-                                        id={"description"}
-                                        placeholder={"O que você está fazendo?"}
-                                        value={description}
-                                        onChange={(event) => setDescription(event.target.value)}
+                                        id="manual-description"
+                                        placeholder="O que você está fazendo?"
+                                        value={manualDescription}
+                                        onChange={(e) => setManualDescription(e.target.value)}
                                     />
                                 </div>
                             </div>
 
-                            <Button className="flex items-center gap-2 w-full">
-                                <Plus className="h-5 w-5" />
-                                Registrar Horas
+                            <Button type="submit" className="flex items-center gap-2 w-full">
+                                <Plus className="h-5 w-5" /> Registrar Horas
                             </Button>
                         </form>
                     </CardContent>
                 </Card>
+            </div>
+
+            {/* Tabela */}
+            <div className="mt-10">
+                <DataTable columns={columns} data={tasks} />
             </div>
         </div>
     );

@@ -7,6 +7,7 @@ import {PrivateRoute} from "./components/PrivateRoute.tsx";
 import RootPage from "./Root/RootPage.tsx";
 import Layout from "./_layout.tsx";
 import TimeRecord from "./pages/timeRecord";
+import ProjectsPage from "@/pages/projects";
 
 function App() {
 
@@ -24,6 +25,7 @@ function App() {
                 >
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="timeRecord" element={<TimeRecord />} />
+                    <Route path="projects" element={<ProjectsPage />} />
                 </Route>
             </Routes>
         </Router>
