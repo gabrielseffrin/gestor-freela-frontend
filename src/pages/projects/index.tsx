@@ -1,32 +1,44 @@
 import React from 'react';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card.tsx";
 import {DataTable} from "@/components/DataTable.tsx";
-import {Badge} from "lucide-react";
+import {Badge} from "@/components/ui/badge";
+import {Progress} from "@/components/ui/progress.tsx";
 
 type ProjectStatus = "ativo" | "finalizado" | "pausado" | "planejamento";
 
-const statusConfig = {
-    ativo: { label: "Ativo", variant: "default" as const, color: "bg-green-500" },
-    finalizado: { label: "Finalizado", variant: "secondary" as const, color: "bg-blue-500" },
-    pausado: { label: "Pausado", variant: "destructive" as const, color: "bg-yellow-500" },
-    planejamento: { label: "Planejamento", variant: "outline" as const, color: "bg-gray-500" }
+const statusConfig: Record<ProjectStatus, {
+    label: string;
+    variant: "default" | "secondary" | "destructive" | "outline";
+    color: string
+}> = {
+    ativo: {label: "Ativo", variant: "default", color: "bg-green-500"},
+    finalizado: {label: "Finalizado", variant: "secondary", color: "bg-blue-500"},
+    pausado: {label: "Pausado", variant: "destructive", color: "bg-yellow-500"},
+    planejamento: {label: "Planejamento", variant: "outline", color: "bg-gray-500"},
 };
 
 const columns = [
     {accessorKey: "name", header: "Projeto"},
     {accessorKey: "client", header: "Cliente"},
     {
-        accessorKey: "status", header: "Status", cell: ({ row }) => {
+        accessorKey: "status",
+        header: "Status",
+        cell: ({row}) => {
             const status = row.getValue("status") as ProjectStatus;
-            const statusInfo = statusConfig[status] ?? { label: status, variant: "outline", color: "bg-gray-300" };
+            const statusInfo = statusConfig[status] ?? {label: status, variant: "outline", color: "bg-gray-300"};
 
             return (
-                <span  className={statusInfo.color}>
+                <Badge variant={statusInfo.variant}>
                     {statusInfo.label}
-                </span>
+                </Badge>
             );
         },
-    }
+    },
+    {
+        accessorKey: "progress", header: "Progresso", cell: ({row}) => {
+            return (<Progress value={33}/>);
+        }
+    },
 ];
 
 const mockProjects = [
