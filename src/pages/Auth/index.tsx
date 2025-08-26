@@ -13,6 +13,8 @@ import {
 import {Input} from "@/components/ui/input"
 import {Label} from "@/components/ui/label"
 
+import {login as loginService} from '@/services/authService.ts';
+
 function LoginPage() {
 
     const navigate = useNavigate();
@@ -21,30 +23,20 @@ function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const handleLogin = (event: React.FormEvent) => {
+    const handleLogin = async (event: React.FormEvent) => {
         event.preventDefault();
 
         console.log('Iniciando chamada para API...');
 
-        new Promise((resolve, reject) => {
-            setTimeout(() => {
-                if (email === 'teste@email.com' && password === '1234') {
-                    resolve({
-                        message: 'Login bem-sucedido!',
-                        token: 'fake-jwt-token-12345'
-                    });
-                } else {
-                    reject({message: 'Email ou senha inválidos.'});
-                }
-            }, 2000);
-        })
-            .then((response: any) => {
-                login({email}, response.token);
-                navigate('/dashboard');
-            })
-            .catch(error => {
-                console.error(error.message);
-            });
+        try {
+            const response = await loginService(email, password);
+            login(response.data.user, response.data.token);
+
+            navigate('/dashboard');
+        } catch (error) {
+            console.error(error);
+            alert('Falha no login. Verifique suas credenciais.');
+        }
     };
 
     return (
@@ -52,9 +44,9 @@ function LoginPage() {
             <form onSubmit={handleLogin}>
                 <Card className="w-full max-w-sm">
                     <CardHeader>
-                        <CardTitle>Login to your account</CardTitle>
+                        <CardTitle>Faça login em sua conta</CardTitle>
                         <CardDescription>
-                            Enter your email below to login to your account
+                            Adicione seu e-mail abaixo para acessar sua conta.
                         </CardDescription>
                         <CardAction>
                             <Button variant="link">Sign Up</Button>
@@ -76,12 +68,12 @@ function LoginPage() {
                             </div>
                             <div className="grid gap-2">
                                 <div className="flex items-center">
-                                    <Label htmlFor="password">Password</Label>
+                                    <Label htmlFor="password">Senha</Label>
                                     <a
                                         href="#"
                                         className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                                     >
-                                        Forgot your password?
+                                        Esqueceu a sua senha?
                                     </a>
                                 </div>
                                 <Input id="password" type="password" required value={password}

@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from "react";
 import {useAuth} from "../../contexts/AuthContext.tsx";
 import {Clock, DollarSign, Folder} from "lucide-react";
-import {getDashboardData} from "../../services/dashboardService.ts";
+import {getDashboardData} from "../../services/authService.ts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx";
 
 type Task = {

@@ -1,4 +1,4 @@
-import {createContext, useContext, useState, ReactNode, useEffect} from "react";
+import {createContext, useContext, useState, type ReactNode, useEffect} from "react";
 
 type User = {
     email: string;
@@ -7,7 +7,7 @@ type User = {
 type AuthContextType = {
     user: User | null;
     token: string | null;
-    login: (userData: User, toker: string) => void;
+    login: (userData: User, token: string) => void;
     logout: () => void;
     isLoading: boolean;
 }

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronDownIcon, Clock, Pause, Play, Plus, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
-//import { finishTimer } from "@/services/dashboardService.ts";
+//import { finishTimer } from "@/services/authService.ts";
 import {
     Select,
     SelectContent,
